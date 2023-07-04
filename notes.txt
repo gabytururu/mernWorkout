@@ -1,0 +1,646 @@
+1. create backend folder
+
+2. create json folder  INSIDE THE BACKEND Folder 
+    --> cd backend
+    --> npm init -y  (the -y simply automatically puts yes to all the questions on the json project )
+
+3. Install express package to create an express app
+    --> npm install express
+
+4. Start building the express server
+    --> require express inside server.js 
+    --> const express = require('express')
+
+5. start up the express app by invoking the express() function and storing it the constant app
+    --> const app = express()
+
+6. start listening for request in a specific PORT number through the listen() method and establish teh action to occur when the listening occurs (set the callback function)
+    --> app.listen(4000, ()=>{
+        console.log('listening on port 4000')
+    })
+
+7. Set up nodemon so you dont have to keep re-starting the server after every change
+    --> if nodemon is already installes globally in your computer you just need to run it:
+        - nodemon server.js
+    --> if nodemon is not yet in your computer you need to install it first
+        - npm install -g nodemon
+
+8. If you desire to run the app via a pre-determined scripped you can do so by going to the package.json file and  adding a new script to the main object. Eg. we can add the script dev below the start script so it launches the app automatically via nodemon
+    -->"dev": "nodemon server.js"
+    --> now instead of having to type "nodemon server.js" in terminal, i can simply run "npm run dev" and it will do exactly the same
+
+9. Now we want to start reacting to requests, meaning setting our specific types of requests (.get, post, delete, etc) and routes associated to the request
+
+10. we begin with our essential .get requests, the home for starters. 
+    -basically we add the .get() method to the app and set the route for this get request. 
+    - This will fire a function to handle that request which is the second argument in the .get() functio/method.  
+    - Inside the arguments of this callback function we need to establish the way the request object and the response object will be handled
+        -> req object has info about the request
+        -> res object we use it to send a response back to the browser or the client
+    - for this get method we use the response object to manipulate how to respond to the .get request. meaning establish the response we will send from the backend to the front end(browser) when home (/) is called... in this example, shaun just sets up a json message that is send as the answer
+        -->res.json({mssg: 'welcome to the app'})
+        --> what this does is that whenever someone connects to port 4000 to home, the app sends a get request of home(/) and the backend app sends that message... 
+            ***OJO AQUI: Antes de que yo estableciera esta linea de codigo, al conectarme al localhost 4000 me salia un mensaje en pantalla que decia "CANNOT GET /" --- A Pesar de eso el server ya funcionaba pq yo podía ver mi console log aca en terminal de "listening to 4000". pero en efecto se triggereaba un get request, que no resultaba en nada mas que el mensaje de fallo. y ahora en cambio me sale el mensaje JSON que envie 
+
+11. I now set up the Environment Variables to store there any environment variables i WANT to keep hidden and not visible in the code if i share the project on github or so (for instance my port and later on any apiKey or so) 
+    --> create a new file in the BACKEND Folder called .env
+    --> create the port variable PORT = 4000
+
+12. Now to acess the environment variables in my code I now need to install the install the .env package
+    --> npm install dotenv
+    --> dot env package is a package that loads environment variables from a .env file into the process.env object -- once the package is installed we can use it in the server.js file 
+
+12. Now to utilize the process.env variables in the server we first go an  require de dotenv package in the server and we also apply the .config() method to it. This will basically run the code that loads the variables' value inside the process.env object everytime we call it
+    --> require('dotenv).config()
+    --> process.env.PORT <-- process.env.VARIABLESNAME
+
+13. Now that we can use environments variable, we go and subsitute the hardcoded PORT number in the .listen method, and we change it to be a hidden environment variable    
+    --> app.listen(process.env.PORT, ()=>{
+        console.log('listening on the selected port)
+    })
+
+14. Now, we know we will need POST and DELETE  requests for our fullstack app. However, typically POSTS AND DELETE requests are triggered by actions that occur in the front end (eg. submitting a form or pushing a delete button). Provided we have not yet built our front end, we must rely on another app to be able to test these requests without the need to build the front end just yet. That app is called POSTMAN
+        - with postman we can simulate different types of requests to our server (get, post, delete etc) it is very much used to test our requests for different routes in our API
+        --> go to postman.com/downloads/
+        --> download and install in computer, create user and all that
+        --> click + to create a new request and select the type of request (eg GET)
+        --> Type the request address  (eg localhost:4000/)
+        --> hit SEND et VOILA!! the answer will be below.
+        --> you will typically then SAVE that request so that you can come back and see the result of different tests... same thing can be done with POSTS, DELETES and so on. 
+        --> to save just hit SAVE, select the collection or create a new one and VOILA! IT is now available in my list of collections and i can go back to those
+
+15. Now I want to go and create a piece of MIDDLEWARE in the app. Middleware is any code that gets executed between the REQUEST executed to the server and Getting a RESPONSE 
+        --> for instance our call back function of "welcome to the app" is tecnically middleware. 
+        -->however we can also create some GLOBAL MIDDLEWARE in our express app by utilizing the .use method
+
+16. So we create a middleware that fires for everyrequest that gets send. 
+        -->The .use() function holds 3 arguments: the request (req), the response (res) and the next argument (next)
+        --> the next argument must get run AT THE END of each middleware in order to move on to the next piece of MIDDLEWARE  
+        --> FOR EXAMPLE --> If we run a middleware before the get request (which as said before, holds in it self a local middleware constituted by its callback funcion), BUT we DONT INVOKE THE NEXT()ARGUMENT/FUNCTION at the end of the first middleware, then it will NEVER GET TO RUN the following middleware (which is the callback function from the .get request) -- so we MUST ALWAYS INVOKE IT AT THE END
+
+17. next step is setting up the different routes or API Endpoints for our express API. so that we get the ability to call for all the workouts and send the mto the client, create new workouts, delete them, update them etc. We ll use and SET UP all the following routes in our application (and their respective handler functions):
+    - GET /workouts --> gets all workouts documents 
+    - POST /workouts --> creates a new workout documents 
+    - GET /workouts/:id --> gets a single workout document 
+    - DELETE/workouts/:id --> deletes a single workout
+    - PATCH/workouts/:id --> updates a single workout
+
+18. to avoid BLOATING OUT our  server file with a long list of router and handler functions for all these requests, i instead create a new folder in the BACKEND called ROUTES and inside of it i create our file called WORKOUTS.JS -- THIS WAY all our workout routes will go into this file
+    - In the new file we typically DO NOT HAVE ACCESS to the APP variable that we have on the server which is the one that allows us to setup our request routes (eg. app.get('/',... etc))
+    - and also TYPICALLY WE dont desire to go and create a copy of the server file (app = express() invokation etc...) so instead of that, in our router files, we rely on the Router() method from express
+
+19. The Router Method creates an INSTANCE OF A ROUTER for us, and so we can then attach a set of handlers to this router. Then at the end of this router file, it is possible to EXPORT all the info associated to this instanced router and then recall it from the server file to use it in our app. So... to build this:
+    -This is what we do INSIDE THE ROUTER FILE (workouts.js).:
+        --> const express = require('express') <-- so we have access to the router method
+        --> const router = express.Router() <-- setting up our router instance
+        --> router.get('/', () =>{}) <-- creting our routes
+        --> module.exports = router  <-- exporting our router
+    - And now this is what we do in our SERVER FILE to recall and use our routes
+        --> const WorkoutRoutes = require('./routes/workouts') <-- or whatever the directory where our router file is stored
+        --> app.use(WorkoutRoutes) <-- use our router routes
+        --> The beauty of this!!! bc it basically in 1 line of the server calls AS MANY ROUTES AS WE HAVE IN OUR ROUTER and use them in our APP
+        --> now we can even DELETE our previous route made of app.get('/',etc) because we are now setting up the get responses via our router so no need for this
+
+20. Now, IF I  ONLY Want to fire these routes when i come to a specific PRECEDENT path, then I need to specify it in my .use function... I do that by setting up a previous argument in the .use method where I call the routes RIGHT BEFORE calling my ROUTES (WorkoutRoutes) and this is to specify a PATH which in this case will be '/api/workouts'
+    - We use this to structure our URL so taht for example what this means is: "HEY YO! when i fire a request to THIS route (Eg. /api/workouts) , I want you to use THIS routes (eg WorkoutRoutes)
+    - that means that when the user types the url localhost4000/api/workouts/ it will get whatver the '/' get route says 
+    - or for instance if we have a route '/about' it will only be fired when preceded by the refered path ... so localhost://api/workouts/about
+    - the code of this looks:
+        --> app.use('/api/workouts',workoutRoutes)
+
+21. Now that I have set all that up in my server i can start creating all the needed routes in my router :) 
+    - I start with the GET requests 
+        -given that i am not gonna work in the front right now(eg i have not yet created the specific components or files to render), then i only create the routes for testing purposes in postman, likely simply by returning a json message as the response object when the get request is executed I do that by sending an object into the json response with the property MSSG that allows me to send a string msg
+            --> router.get('/', (req, res)=>{
+                res.json({mssg: 'GET all workouts'})
+            })
+            --> router.get('/:id', (req, res)=>{
+                res.json({mssg: 'GET a single workout'})
+            })
+    - Then the POST Request
+            --> router.post('/', (req, res)=>{
+                res.json({mssg: 'POST a new Workout})
+            })
+    - Then a DELETE Workout
+            --> router.delete('/:id', (req, res)=>{
+                res.json({mssg: 'DELETE a single Workout})
+            })
+    - Then an UPDATE (PATCH) Workout
+            --> router.patch('/:id', (req, res)=>{
+            res.json({mssg: 'PATCH/UPDATE a single Workout})
+            })
+    ***Voilá!! we have created a router, added all the different handlers the router (and its routes) need, exported the router at the end, then we used the router in the server, for a particular PATH -- Remember if for instance i try to go to a typical home url (eg. localhost://PORT/) then NOTHING will return, bc the only GET request handler associated with a / that we setup, is connected to a precedent path (/api/workouts) -- so only when i go to localhost://PORT/api/workouts/ Is that the router returns all these different paths--- i suppose a redirect solves then this
+
+22.Next, in preparation to the actual POSTS and PATCH requests in the future, it is relevant to remember that when these kinds of requests are triggered, they typically involve the sendout of certain data to the server (eg. the inputs on a form or so)- 
+    - generaly, we access that data from the request object (req) as it is specifically refered as the BODY (.body) OF THE REQUEST (req.body)
+    - However, we can ONLY really access that body, if we actually PARSE the original request as it comes, and turn it into a JSON object. It is ONLY by doing that, that we can then call for the body property from the request object (req.body)
+    - to be able to do so, we need to add another piece of middleware that invokes the json method from express (--eg. express.json())... it is a middleware bc this way it intercepts the object sent from the form, before it hits the server, and it does the parsing right there in the midst of the process. The code for this is:
+        --> app.use(express.json()) 
+        --> now in any POST request it receives it will look to see if there is any body or data that needs to be parsed and attached it to the request object so we can access it in the request  handler (req.body)
+
+23. MONGO & MONGO DB DATABASE
+    - Now we must setup our database. will use it with a free tier basic acct from MONGO DB. Typically, when setting from scratch this is the process needed:
+        - register in mongoDB atlas via free tier --> i am connected via aguayaire email
+        - create a new cluster 
+        - assign a user and psw to the cluster w read and write permits --> I had already done this so my user an psw credentials are the same from other test projects. provided is a free acct, this credential is limited to having one cluster of data ..but within i can do many collections. --> THIS May be adjusted or review from the DATABASE ACCESS option in the SECURITY SECTION
+        - Adjust the NETWORK ACCESS Parameters in the SECURITY SECTION (Security + network access) -- i have kept this as a fully open account linked to any ip 0.0.0.0 but maybe i need to update and just link to my real ip a/o adjust each time i connect via vpn. 
+        - Obtain a connection string by hitting the CONNECT Option within the DEPLOYMENT SECTION (which should already be stepping on my open cluster of data) (DEPLOYEMENT + CONNECT) 
+        - Select then the option to connect via NATIVE NODEJS application, and then copy the connection string (DB_URI)
+        - Now substitute the USER and PASSWORD Placeholders for the real ones --> gabriela:<password>
+        - y voila!! ya podria conectarme directo a mongoDB via mongodb API Package.. para queries y demás.. pero en lugar de eso ahora utilizaremos mongoose para facilitar el proceso de llamados a la DB (Mongoose is an ORM is less verbose and less clunky than MONGODB NATIVE api)
+
+24. MONGOOSE 
+    - Mongoose is an ODM Library which stands for OBJECT DATA MODELLING. It basically "wraps" MONGODB With an extra layer that allows us to read and write database documents. It also gives us a way to declare MODELS & SCHEMAS to ensure a more strict data structure 
+        - for example i can make a blog schema that says "every blog must have a title, a body and whatever property, and they all must be "string" values. 
+        - then if we try to save any blog without fullfilling all those fields and rules, mongoose would not let us. so it gives an extra layer of structure that mongodb alone does not provide. 
+    - We will then use MONGOOSE to connect to the DATABASE inside the server.js file.
+    Anyways to do all this we will need to install, require & setup mongoose in our project. 
+        -First step then is install:
+            --> npm install mongoose
+        - then require the package in our server file   
+            --> const mongoose = require('mongoose')
+        - now we connect mongoose to the database from the server using the mongoose method .connect(). 
+        -This method needs our URI Connection KEY or string. Though as we have this set as an environmental variable we must call it via process.env (process.env.MONGO_URI)
+        - Now in addition is relevant to know that .connect() is an ASYNC method. so as always we need to instruct what to do with the response a/o catch any potential errors. 
+        - Given that this method is ASYNC it is very important to controll the code order. BC in general, the DATABASE should load FIRST and THEN we should start listening to the clients requests via PORT. Otherwise we risk errors and bugs related to the client calling for something in the DB prior to the DB being loaded. So... we controll this by making sure the .listen() method always occurs after the DB returns... a neat way to achieve that is wrap the app.listen() function INSIDE the .THEN of the mongoose.connect() function
+            --> mongoose.connect(process.env.MONGO_UI)
+                    .then(()=>{
+                        app.listen(process.env.PORT, ()=>{
+                            console.log('listening on port', process.env.PORT)
+                        })
+                    })
+                    .catch((err)=>{console.log(err)})
+        - An error may occur for instance if the URI IS incorrect or if the user name or password is not correct either. 
+            - if I alter my URI (for instance put "gabriea" as user without L) and run the code, I get back the following error:
+                - MongoServerError: bad auth : Authentication failed.
+
+25. CREATING MONGOOSE SCHEMAS AND MODELS 
+    -   To be able to interact with the data, the first recommended thing to do is create the schemas and models for the concrete data that Im gonna be handling. bc this way I can make sure it is always structured in a predictable and handleabel way. 
+    - to do that I must first:
+            --> create a models folder inside BACKEND
+            --> create a workoutModel.js file inside the models folder (if i were working with blogs it may be called blogsModel.js or with complaints then it would be complaintsModel.js)
+    - Then inside the workouts file I must require mongoose package, bc it is mongoose who allows us to create this schemas and models.. mongo db it self is actually schemaless
+            --> const mongoose = require('mongoose')
+    - Then we invoke the mongoose function to create a new schema:
+            --> const Schema = mongoose.Schema  <--note Schema is always titleCase
+    - Now we create our first schema. following a sturcture kindof similar to the class constructurs or so... and inside this new Schema, we pass on an OBJECT where we define the specific schema.. meaning, in there, we establish which properties the schema MUST HAVE (e.g title, age, body, etc), and what type of VALUES each property MUST receive (eg. string, booleans, number, etc)
+            --> const workoutSchema = new Schema({
+                title: {
+                    type: String   <-- type goes in UPPER letter first
+                    required: true <-- to establish that it is REQUIRED
+                }
+                reps: {
+                    type: Number,
+                    required: true
+                }
+                load: {
+                    type: Number,
+                    required: true
+                }
+                })
+    - Now there is a SECOND ARGUMENT that this can have, and there we will set up an object where we call for the property timestamps and we set it to true. This way it will AUTOMATICALLY add the timestamp each time I create a new object and inject it in the database, or when it gets updated. So it ultimately looks this way:
+            --> const workoutSchema = new Schema({
+                title: {
+                    type: String   <-- type goes in UPPER letter first
+                    required: true <-- to establish that it is REQUIRED
+                }
+                reps: {
+                    type: Number,
+                    required: true
+                }
+                load: {
+                    type: Number,
+                    required: true
+                }
+                }, {timestapms: true})
+
+    - Once we have created the SCHEMA... we can then proceed with producing the MODEL... KEEP in mind then that  while the schema defines the structure of a document o a particual document inside a database, then what the model does is apply that schema to a particular model , so we can then use the model to interact with a collection of that name. 
+    - to incorporate a model added to the created schema we first need to establish a module export at the end of the schema, which we equal that module export to the concrete model that we are trying to create... by calling for the .model() method from mongoose... and then as the arguments of this method we recall both the model name (always in singular) and the schemaName we just created. See...how it looks like (in a general and in applied way):
+            --> module.exports = mongoose.model('Modelnameinsingular', 'schemaName') 
+            --> module.exports = mongoose.model('Workout', workoutSchema)
+            --> *** Note how the model name comes in upperCase (title style) and IN SIGULAR...this must be like this because then, mongoose recognices this name structure and creates a collection with that same name but in Plural (eg. Workouts)
+    - once we have created both the SCHEMA and the MODEL, we can later on IMPORT THEM on the file Im gonna use them (e.g in the server)... and now regardless the name of the MODEL was written here as a string, it later on operates as a variable... meaning I am able to call the "Workout" model and apply methods to it in order to interact with the Collection (Workouts). For example:
+            --> I can use the method .find() to call all the workouts as in:4
+            --> Workout.find()
+            --> or If i want to add a new Workout Model I use a different method...
+    - Now i can go ahead and put the functioning of this schema and model into test. To do so, we can try to create a new object of this Model to go into the database (eg. add a new Workout to the Workouts collection)
+        - to try that, we go into our server, and first of all we import the workoutModel.js file into the server so we can use that and its variables (such as the Workout object). this will essentially grant us access to the specific model and the collection associated.
+            --> const Workout = require('../models/workoutModel')
+
+        -Then we will try to fill out the POST handler, and try to add a new Workout. For starters, we set up a destructured object and associate it with the body of the request. This destructured object must adhere to the established schema structure,so... it is an object that contains as properties, all the required data (eg title, reps ,load etc)
+            --> const {title, load, reps} = req.body
+
+        - thanks to the MIDDLEWARE we added at the beginning (app.use(express.json)), now any request we make, will be parsed accordingly, which will allow us to use the request object and as a consequence, extract its body and manipulate it --just how we did above, where we assigned the values obtained from the body of the POSTED object (the request) to a new object (the destructured object) that organizes this data in 3 properties, that abide by the Schema created.   
+        - Now, we will try to add a new document into the Workouts collection. And we do that by setting an async function (TRY) that will send that instruction (to add the received object - the new Workout) into the desired collection in the DB (the Workouts collection), and will also define how to handle the responses received as well as the  an error (CATCH)-
+        - To do this first, INSIDE THE TRY, we set up the function that will allow us to create the new Workout, and we store it (what this functions return) into a variable (workout)
+        - now KEEP IN MIND THAT GIVEN THIS IS A REQUEST THAT INTERACTS WITH ANOTHER PROGRAM (the database it self) it works like an API, and as such, it is an ASYNCRONOUS TASK. So to handle this properly, you also must ensure that the whole process of request and response is an ASYNC function... and in turn, the process of Workout creation will need to AWAIT for the answer. 
+        - Also, in addition, you must make sure to send the response to the CLIENT based on the result of the requested task (the creation of the work out). As such, for the TRY PORTION, we can send the actual POSTED OBJECT as a response (and set it up as a 200 OK STATUS), and in turn, we can send the ERROR OBJECT (The error message property specifically) as the answer in case of an error in the CATCH PORTION. Also making sure we establish the server status as 400
+                --> router.post('/', async (req, res)=>{
+                        const {title, load, reps} = req.body
+
+                        try{
+                            const workout = await Workout.create({title,load,reps})
+                            res.status(200).json(workout)
+                        }catch(error){
+                            res.status(400).json({error:error.message})
+                        }
+                    }) 
+        - Once this POST request has been properly SET, we can go to post man and try it out to see how it works and the responses received under different scenarios. 
+            --> first we go to POST req in postman
+            --> then we go into the BODY tag of the POST REQUEST .. bc if we are going to run/simulate a POST REQUEST, we need to make sure we are sending a concrete body data value (a title, reps and load) that the program can identify and pair with the Model and create a new element in the database. 
+            --> there in the body we first go and change the type of data into RAW JSON which is what we will be passing on
+            --> then we simply create the object to be sent:
+                    --> {
+                            "title": "Situps",
+                            "load": 0,
+                            "reps": 50
+                        }
+                    --> and we HIT SEND <-- which will indeed send the POST REQUEST with this object as the req.body --> and so will add a new document into the DB with this information as its body and create the new element in the collection. 
+                    --> As soon as we hit SEND, the screen underneath will DISPLAY THE RESPONSE (res). As a response, we established we wanted to get a 200 status code and the WORKOUT document in JSON format... ans as such we get it.. and it is NOT ONLY THE BODY we sent but the body allong with the other elements of the SCHEMA (eg. the time stamp, the unique ID the program sets , etc)
+                    --> also if we try to send an incomplete or wrong formated request (eg. send a body that does not have reps or so), as a response we get the 400 status we set up above, along with the message body of the Error --> 'reps' is required --> because the model we created defined that the reps property (as well as the others) were REQUIRED. 
+            --> FINALLY, IF YOU GO into the MONGO DB ATLAS COLLECTION, WE WILL SEE THE WORKOUTS COLLECTION HAS BEEN SETUP and inside will be the DOCUMENT CREATED which is an object with all the specifics of your workoug :D!
+
+26. CONTROLLERS
+    - Now that we have our models set as well as our routes, it is desireable that we clean up the ROUTER file, so it  reflects the route  where each path should take us but without including right there the entire logic of the responses and behaviour that comes after getting to those paths.
+    - A router file´s mission is indeed to register the ROUTES and their PATHS, but thats about it. The rest of the logic, belongs elsewhere. 
+    - So to do this -the cleanup- we typically take that logic into a separate file that acts as a CONTROLLER. 
+    - A controller file's mission is to hold the control functions (which are the handling functions for each route), one for each route in the router.
+    To do this you must:
+        --> create a new folder in the Backend called CONTROLLERS
+        --> Create a new .js file inside the controllers folder called workoutController.js (or whatever name -- eg. blogCongroller.js, complaintsController.js, etc) 
+        --> and now we will create a new handler fucntion for each of the actions desired by each routers path eg.
+            - one handler to get all workouts
+            - one handler to get a single worktou
+            - one handler to post a workout ... etc 
+
+27. CREATING THE CONTROL/HANDLER FUNCTIONS IN CONTROLLER
+    - Now we have the controllers folder and File,the first step is to REQUIRE the Workout Model inside the controllers file -- bc it is inside the logic here that we will use it (to call for the body of the workout, to post the body of the req. workout etc)
+        --> const Workout = require('../models/workoutModel')
+    - Then we define in comments all the functions we will need. 
+    - Now we start creating the handler functions.
+
+28. CREATING A POST/CREATE HANDLER FUNCTION
+    - First we create the POST function because in a way we already have it created in the ROUTER, so we basically will be moving the logic from one file to the other (from router to controller)
+    - To do so, in the controller file, we simply create an arrow function (in this case called Create workout)... making sure as well it is an ASYNC arrow function.. 
+        --> eg. const createWorkout = async(req,res)=>{etc}
+    - Inside the body of the function we basically MOVE IN the same logic we had previously written in the router file... so the function ultimately looks like:
+        --> const createWorkout = async(req, res) => {
+                const {title, load, reps} = req.body
+                try{
+                    const workout = await Workout.create({title, load, reps})
+                    res.status(200).json(workout)
+                }catch (error){
+                    res.status(400).json({error: error.message})
+                }
+            }
+    - now that this function is produced we can EXPORT IT as a module at the end of the file:
+        --> module.exports {createWorkout}
+    - and once it has exported we can also import it / require it from the ROUTE FILE 
+        --> const { createWorkout } = require('../controllers/workoutController.js)
+    - With this, we can finally now substitute the way the ROUTER is written for this action and erase all the req,res logic, so it ONLY remains with the PATH/ROUTE identification, which is its mission indeed:
+        --> router.post('/', createWorkout)
+    - and VOILA!! THE POST CONTROLL FUNCTION IS DONE!!
+
+29. CREATING A GET ALL DOCUMENTS HANDLER FUNCTION
+    - To get all the documents in the DB we will rely on the method .find() this method allows us to call for all documents, or to specify a specific search parameter so it can bring just a sub-set of documents that match the parameter/criteria. 
+    - The logic to produce this is the same: create the handler function, export it at the end in the controller, import it from the router and substitute the logic in the router so it only establishes the path/route and recalls the corresponding hanlder function
+        --> const getWorkouts = async(req, res) =>{
+                const workouts = await Workout.find({}).sort({createdAt: -1})
+                res.status(200).json(workouts)
+            }
+    - it is KEY to notice here that we use the method find with an empty object inside --> Workout.find({}), which means find all objects... now if we wanted to search for something specific, we could put the searched property inside the object itself eg --> Workout.find({reps:20})
+    - in addition, we are adding a .sort method, that allows us to use the createdAt property, which is paired with -1 which sorts it in decending order so that the latest one shows up at top. 
+
+30. CREATING A GET SINGLE DOCUMENT HANDLER FUNCTION
+    -Shau explains the code but tells that it wont work and that we are just lining it out... we will come back later.
+    Though in essence:
+        --> const getWorkout = async(req,res)=>{
+            const {id} = req.params
+            const workout = await Workout.findById(id)
+            if (!workout){
+                return res.status(404).json({error: 'No such workout'})
+            }
+            res.status(200).json(workout)
+
+        }
+    
+    - Notice that going by the route associated to this handler, which calls for an id ('/:id') the first we do is finding a way to grab the Id of the workout. We do that utilizing the property "params" (which shaun says it stores all the route parameters) from the request object. 
+    - In previous tutorials (node.js) we have simply created a const id = req.params.id ... however here, shaun instead utilizes a destructuring method so it is const {id}=req.params --- interesting.. it seems like that when i destructure i can call in as many properties of an object as i desire, in whatever order... from just one (like here) to all of them 
+    - then he utilizes this new {id} to call for the specific document(workout) we need, by applying the id to the Workout model, and the method findById(id).
+    - Finally, he establishes the answers... instead of using a try and catch, he uses a conditional (if) with an early return.. so that, if the error (!Workout -- as in workout doesnt exist) is triggered then the early return prevents the logic to go on with the response associated with the successfull Workout recall. 
+    - at the end, dont forget to EXPORT the new handlers and import them properly from the ROUTER file and inside the specific routes that utilize them.
+
+31. COMPLETING THE GET SINGLE DOCUMENT HANDLER FUNCTION
+    - So now everything was proepertly set up to get all workouts and single workouts we test it in POSTMAN.
+    - It almost all works correctly... except one thing -as shaun anticipated- the GET single workout handler works fine if you indeed pass on a real ID that exists, but it breaks when the ID you pass on doesnt exist. it doesnt even conduct the portion of the code that defines what to do if there is an error, but instead it simply BREAKS and throws -->  [nodemon] app crashed - waiting for file changes before starting...
+    - this happens because the error not even relates to the :id not found, but a step before, which is the :id not even being a type of id that can be accepted by mongoose (it doestn cover the criteria of number of characters, types of characters etc) so it BREAKS
+    - to fix this, we need to make sure this handler has an extra step where, before even trying to call the workout, we should FIRST put a conditional that allows us to CHECK the :id , to verify it fullfils the minimum criteria from MONGOOSE to be considered a valid ID for this particular collection.
+    - to do this, we follow some steps:
+        - require mongoose at the beginning of the file (because this is an error related to mongoose ID)
+            --> const mongoose = require('mongoose')
+        - setup a conditional that allows us to check if this ID is even a valid Mongoose Id. ***mucho OJO AQUI. este codigo debe ir JUSTO DESPUES de la llamada de id desde req.params... porque si no, por ej si viniera despues del const workout = await Workout.findById(id) la app CRASHEARÍA!! (ESO ME PASO A MI).. y creashea porque justo primero intenta crear el workout con la ID invalida... porque el orden del código SI AFECTA. entonces eso.. asegurate que la validacion de la ID ocurra tan pronto se pueda, porque si no, el resto el codigo puede causar errores. 
+            --> if(!mongoose.Types.ObjectId.isValid(id){
+                return res.status(404).json({error:'No such workout'})
+            })
+        - we leave the rest of the code inside this handler as is... and so we ultimately end up with a handler that looks like this:
+            --> const getWorkout = async(req,res)=>{
+                    const { id } = req.params
+                    if(!mongoose.Types.ObjectId.isValid(id)){
+                        return res.status(404).json({error: 'No such workout'})
+                    }                
+                    const workout = await Workout.findById(id)
+                    if(!workout){
+                        //early return! -- si esto se cumple ya no sigas con el codigo siguiente
+                        return res.status(404).json({error: 'No such workout'})
+                    }
+                    res.status(200).json(workout)
+                }
+
+32. DELETE WORKOUT
+    - To delete a workout we must also rely on an ID param, so a lot of the first part of this handler will be identical to the get single document handler.
+        --> const { id } = req.params
+            if(!mongoose.Types.ObjectId.isValid(id)){
+                return res.status(404).json({error:'No such workout})
+            }
+    - then, provided here we are not trying to find or create a new worktou but instead to delete one, we rely on the .findOneAndDelete() method. This method, will find the document whose id matches the id provided. Note that to make this logic we use both the "id" we call from the destructured object, and also another "id" that is written with an underscore --> _id  <--- this id is written like this because this is the way MONGO DB repreesnts id's .. so we are matching the ID provided with the Mongo DB register. 
+    - and then in the same way we did in the previous handlers, we finalize specifying what to do if the workout returns empty (eg. it doesnt exists .. it is a proper type of id but it doesnt exists), and then what to respond if it indeed exists 
+    - OJO*** Note how in both conditionals we keep the early return so that we make sure that if we get an error, we simply stop running the function...
+        --> const deleteWorkout = async(req,res)=>{
+                const { id } = req.params
+                if(!mongoose.Types.ObjectId.isValid(id)){
+                    return res.status(404).json({error:'No such workout'})
+                }
+
+                const workout = await Workout.findOneAndDelete({_id:id})
+                if(!workout){
+                return res.status(404).json({error: 'No such workout'})
+                }
+                res.status(200).json({workout})
+            }
+
+33. UPDATE (PATCH) WORKOUT
+    - To make an update, we will as well rely on the :id param. so, we ... once again-- repeat the beginning of the former handlers to make sure we call the id, and also verify that the id is in the proper valid mongoose format 
+        --> const { id } = req.params
+            if(!mongoose.Types.ObjectId.isValid(id)){
+                return res.status(404).json({error:'No such workout})
+            }
+    - then, we go and find the object/document we want to update, and to do so we rely in a method called findOneAndUpdate(). Now this method, hold 2 different arguments... 
+        - first --> the ids that need to be matched
+        - second -> the area we desire to change in the document... 
+    - keep in mind that to make an update we will typically be passing a concrete argument (like a json object just how we did it in the POST handler). Knowing that this is imminent to happen, the only thing we need to do in this handler, is to specify which area of the document will receive thos changes..in this case we know it will be the body of the request the one will contain the changes to be made (req.body). Provided it is possible to only change a portion of the body (eg. only the title, or only the reps, or only the load), we must keet the logic of how to get this flexible. We do that by specifying that the changes to be made will apply to the "SPREADED" BODY --> ...req.body <--- this way JS itself will find which property of the body is indeed called for changes 
+        --> const workout = await Workout.findOneAndUpdate({_id:id}, {
+            ...req.body
+        })
+    - once this is done we can finalize the handler with specifying the responses we want to receive in case of an error and also in case of success. So the final handler looks like this: 
+        --> const updateWorkout = async(req, res) => {
+            const { id } = req.params
+            if(!mongoose.Types.ObjectId.isValid(id)){
+                return res.status(404).json({error: 'No such workout'})
+            }
+
+            const workout = await Workout.findOneAndUpdate({_id:id},{
+                ...req.body
+            })
+
+            if(!workout){
+                return res.status(404).json({error: 'No such workout'})
+            }
+            res.status(200).json(workout)
+        }
+    - et voila!! export and import as needed!!
+
+34. CHECKING FUNCTIONALLITY IN POSTMAN
+    - Now that all is ready we can just go and check functionallity in postman.
+    - for instance, in the PATCH request, is relevant that just like we do in the POST Request, we specify that the info we will send is RAW JSON.. and then we simply send the property to be update.. eg  
+        {
+            "reps" : 50
+        }
+    - if it works we will get in return the original object but if we go and do a GET ALL WORKOUTS Request again we should see that the document has changed.
+    - similar with delete, if we try to delete a document, we will get in return the document it self (because that is the response we specified) but then, we can go and do a GET all workoust request and we will see, such document no longer exists in the DB.
+    -- SO.. With this funcitoning well... our BACKEND WORK is done!!!!! voilaaaaaaaaaaaaaaaa!!!
+
+35. CREATING THE FRONT END / REACT APP / SETUP
+    - Now that the backend is completed, we want to create the front ent so we can send requests to the backend from the users perspective
+    - For starters, I get out of the backend folder.
+    - now, I aim to create a front ent folder... and to do so i simply create a react project and name it FRONTEND
+        --> npx create-react-app frontend 
+    - now I move to the front end folder by 
+        --> cd frontend
+    - NOW i can see the folders from the front end (e.g nodemodules, public, src, and those of the gitignore, and json stuff)
+        --> rememeber the INDEX inside PUBLIC is the one that gets served, this basically calls the index.js and that it self the root folder which is app.js
+    - now following SHAUNS recommendation i can start deleting a number of folders and files i truly wont utilize:
+        --> App.css <-- DELETE
+        --> App.test.js <-- DELETE
+        --> LOGO.SVG <-- DELETE
+        --> reportWebVitals.js <-- DELETE
+        --> setupTests.js <--DELETE
+    - NOW That we have deleted those files, we also must erase the places where those files were imported
+        --> import reportWebVitals in index.js
+        --> import logo in App.js
+    - And also we will delete ALL the return inside the APP COMPONENT.. we only keep the main div <div className="App"></div> but we remove the rest because we will be building this from scratch
+    
+36. IMPORTING REACT-ROUTER-DOM INTO THE project
+    - Now we shall go ahead and install the router package as we will use it here and import the components that we will use
+        --> npm install react-router-dom
+        --> import { BrowerRouter, Routes, Route} from 'react-router-dom'
+
+37. CREATING OUR FIRST ROUTES 
+    - For starters i create my first routes in my root component (app.js). The newest version of react router no longer uses SWITCH so i will wrap the app in the BrowserRouter and then I will wrap each individual Route in the component Routes.
+    - In addition, instead of adding the component as the INTERNAL BODY of the opening and closing metatag ROUTE, in the new version, the tag Route allows me (like many other tags in react) to only use a closing one, and to incorporate inside both the "path" property which specifies the route and the "element" property which points to the component that will be rendered with this path/route --> OJOO AKIII--> super importante que el elemento llamado sea envuelto en METATAG </> pq si no, no se renderiza.. ya me paso XD .. debe quedar element={<Home/>}
+        --> return(
+                <div classname='App'>
+                    <BrowserRouter>
+                        <div className = 'pages'>
+                            <Routes>
+                                <Route path='/' element={<Home />} />
+                            </Routes>
+                        </div>
+                    </BrowserRouter>
+                </div>                
+            );
+    -Now that the route is set i need to create the refered component in order to test this --> the HOME component
+
+38. CREATING THE FIRST PAGES (Home) --> not really a component but a pageeee huuuh!!!!
+    - To create the HOME PAGE I first create a folder that I typically used to call COMPONENTS but this time shaun has instead named it PAGES... and I now realize is clever because this may not be a reusable COMPONENT but instead a PAGE THAT CALLS COMPONENTS INSIDE IT.. IS LIKE THE TEMPLATE THAT YOU GET BUILD WITH THE SUBPARTS (COMPONENTS)
+    - i THEN As usual, export it at the end, and import it at the beginning of the ROOT APP where it belongs    
+        -->const Home = () => {
+                return ( 
+                    <div className="home">
+                        <h2>WELCOME TO THE FRONT END</h2>
+                    </div>
+                );
+            }
+ 
+        export default Home;
+
+39. CREATING THE COMPONENTS (Navbar)
+    - now i start creating my first components. to do so i create inside of SRC another folder called COMPONENTS and inside the .js file that specify the component 
+        --> components --> Navbar.js
+    -then we create a basic navbar for testing... simply by creating a container div and a linkable option (like all menus have)
+    - as we are working on react, we dont try to do a.hrefs tags, instead we go directly to incorporate a react Link component, which as we already know, allows us to create internal links taht connect to the routers in the route so the page requests are intercepted by the react-router instead of going all the way to the backend.
+    - remember that to use a Link we first need to import this component from its package so we do that, and then we create the component, plus export it at the end so we can later on import it on the root and use it in our app.
+        --> import {Link} from 'react-router-dom'
+            const Navbar = () => {
+                return ( 
+                    <header>
+                        <div className="container">
+                            <Link to="/">
+                                <h1> Workout Buddy</h1>
+                            </Link>
+                        </div>
+                    </header>
+                );
+            }            
+            export default Navbar;
+    
+    - now ***OJO AQUI**** Cuando yo incorporo la Navbar en la root app, I actually DO NOT DO IT inside the ROUTES compoment.. because in reality i DO NOT NEED THE NAVBAR TO BE LINKED TO A CONCRETE ROUTE.. instead I want the navbar to the a permanent component on top of my app. So... as though, I must put it OUTSIDE the <Routes/> component.  HOWEVER, I still want this componet to be part of the BROWSWER ROUTER (so it can be intercepted by the router and be part of the REACT SPA that doesnt go to the backend all the time) so.. I must carefully place it INSIDE the browswer router (yet outside the Routes component itself)
+    - Here, the Navbar compoonent is NOT CALLED as an element={} because IT IS NOT PART OF A ROUTE. it is simply instead called as an individual component
+            --> return (
+                <div className="App">
+                <BrowserRouter>
+                    <Navbar />
+                    <div className="pages">
+                    <Routes>
+                    < Route path="/" element={<Home />} />
+                    </Routes>
+                    </div>
+                </BrowserRouter>     
+                </div>
+            );
+    - finally, shaun goes and fixes some first css' to make it pretty
+
+40. FETCHING DATA FROM BACKEND API // USE EFFECT HOOK
+    - Now that we have a basic react app, we can start testing it by fetching some data from the backend DB API
+    - I will try to do that from the Home page, and try to GET all the workouts
+    - I do that with the help of USE EFFECT HOOK .. so i go and import the useEffect at the top and also the useState bc i will also use it later
+        --> import {useEffect, useState} from 'react'
+    - UseEffect is a hook that allows us to fire a Function when the component is rendered. I can condition its re-rendering by setting a dependency... it could either be only rendered ONCE AT THE VERY FIRST BEGINNING, or EVERY TIME A SPECIFIC COMPONENT CHANGES (I do that with a dependency to such components state) -- here is how it looks when only rendered once at first
+        --> useEffect (()=>{
+                ... internal logic...
+            }, [])
+
+41. FETCHING DATA FROM BACKEND API // USE STATE + SETTING THE FETCH LOGIC
+    -Now, inside the useEffect I include the logic for the FETCHING of the API. to do so I just incorporate an ASYNC function that calls for the BACKEND ENDPOINT (4000) with the BACKEND PATH that we have established for the GET ALL WORKOUT request (:localhost:4000/api/workouts). And as with any ASYNC function I then establish what to do with that response  (eg. turnit to .json())
+    - Finally, I setup a conditional that allows me to define, what to do with the response... eg. "display all workouts received". To do this I must work with the .OK property of the request object (which can be true or false) and with the useState Hook. 
+        --> First I setup a state for the workouts at null. and then I allow the workouts state to change if the response is OK 
+        --> const Home = () => {
+                const [workouts, setWorkouts] = useState(null)
+                useEffect (()=>{
+                    const fetchWorkouts = async () => {
+                        const response = await fetch('http://localhost:4000/api/workouts')
+                        const json = await response.json()
+
+                        if(response.ok){
+                            setWorkouts(json)
+                        }
+                    }
+                    fetchWorkouts()
+                }, [])
+
+                return( ... return info... )
+            }
+
+42. FETCHING DATA FROM BACKEND API // DEFINING THE JSX TEMPLATE (MAPPING RESULTS)
+    - Now, I define the JSX template correspondent to this FETCH DONE SUCCESSFULLY.
+    - To do that I basically create a workouts div to receive the workouts fetched.
+    - then I setup a conditional rendering logic... so that I dont have a bug/error in case the fetch takes a minute to be sent... I do that with the typical && --> {workouts && workouts.map etc etc}
+    - Then, I incorporate the logic I want to run in case I get the json file with teh array of objects/documents from the Workouts Collection Database. As typically with react, I relay on the .map method... basically... the logic is "IF YOU GET WORKOUTS BACK, GO AHEAD AND MAP THEM", And return a Template for each workout that includes XYZ". 
+    - ***OJO AQUI ***--> El "return a TEMPLATE with XYZ" ES clave... PQ ESTA ES LA RAZON POR LA QUE A VECES SE USA EL PARENTESIS EN VEZ DE LAS CURLY BRACKETS adentro de LA anonymous function de JSX"!!!!!!!!!! --- porque el mensaje a react es... si recibes info de workouts, toma cada workout y creame y renderizame ESTE TEMPLATE!! --- mientras que cuando usamos curly brakets el mensaje es mas comos... si recibes info de workouts toma cada workout is haz esta transformacion .. o whatever... la cosa es que para JSX se vale usar el parentesis porque lo que estoy pidiendo es renderizar un template. 
+    - lo otro bien relevante aqui es que en el mapeo que haga NUNCA OLVIDAR QUE DEBO INCLUIR MI ID como parametro KEY. Esto es basico en react para futuras manipulaciones y transformaciones. Acá directo ocupo el Id de MONGO (EL DE UNDERSCORE _id) porque así inserta directo el id de la database que recibe y mapea
+    Al final... el return queda así: 
+        --> return(
+                <div className="home">
+                    <h2>WELCOME TO THE FRONT END</h2>
+                    <div className="workouts">
+                        { workouts && workouts.map((workout)=> (
+                            <p key={workout._id}>{workout.title}</p>
+                        ))}
+                    </div>
+                </div>
+            )
+
+43. LAUNCHING THE BACKEND SERVER (WHILE FRONT END SERVER STILL ALSO WORKS)
+    - Now we have our fetch function all set, we want to try to call it to see if it works. 
+    - as a first attempt when we save the react file, the front end app (in localhost:3000) instantly breaks with the msg 'Failed to fetch' - the reason is that it can certainly not fetch from a server that is OFF. So, we gotta turn it on (remembering, the server is in localhost:4000)
+    - to launch the server I just
+        --> open a new terminal
+        --> CD into the backend folder (cd backend) 
+        --> run the server (npm run dev) 
+    - this will launch the server in port 4000
+    - however, as soon as I launch the server and update the App I now get this other ERROR MESSAGE:
+        --> "Access to fetch at 'http://localhost:4000/api/workouts' from origin  'http://localhost:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.
+    - This error occurs because as clearly says, we are trying to connect server 3000 to server 4000 without setting up the proper credentials that allow this connection. Which turns into a BLOCKED action. Because typically, these types of cross origin requests are blocked for security reasons. 
+
+44. FIXING THE CORS ERROR FROM CROSS ORIGIN REQUESTS. 
+    - To fix this situation there are two options, which will allow us to get around this problem while we are DEVELOPING the APP
+        -->1. We can install a package called CORS (Cross Origin Resource Sharing),  This would be used in the back end server and allow these cross-origin requests. 
+        --> 2. the other option (which is simpler for us) is to add a PROXY Field in the front end package.json file <-- this is the one Shaun has selected
+    - To do the solution, we simply must go to the package.json file (inside the FRONT END FOLDER), and in the very fist object, we insert a property called "proxy" (as the very first property) and we set this equal to the DEVELOPEMENT SERVER ADDRESS (http:localhost:4000) which is the address of the NODE.JS SERVER. 
+    - What this property does, is tells the REACT server to proxy any requests that it doesnt recognize, to our API/BACKEND server at this address 
+        --> {
+                "proxy": "http://localhost:4000",
+                "name": "frontend",
+                "version": "0.1.0",
+                "private": true,
+                "dependencies":{
+                    etc.etc etc
+                }
+            }
+    - In addition to this action, we also must adjust the endpoint in our FETCH request. Because now instead of calling for the full endpoint (eg http://localhost:4000/api/workouts), we just need to call for the last part of the endpoint (eg. /api/workouts). This way when react tries to access that endpoint, it will NOT recognize it and then instantly go to the proxy to try to send it there, which will produce in it self the full request of "localhost:4000/api/workouts",
+    - As a by product, this action will remove the CORS error we get in the console bc it will not recognize it as a cross origin (eg. a request from port 3000 to port 4000) but as a request from actual port 4000
+        -->  const response = await fetch('/api/workouts')
+    -***OJO AQUI*** MUY MUY IMPORTANTE ******** --> This will ONLY fix the problem DURING DEVELOPEMENT, For production, we will need to make sure later on that every request points to the right ENDPOINT. 
+    - NOW we can try to run it again and for the moment it should work out ... (ojo para que corra toca salir del front end server y volver a hacer el launch porque el package.json changed asi  que pa que lo reconozca toca reiniciar el servidor)
+    - ***************************************************************
+    - La solucion de shaun (del proxy) no funcionó, me arrojaba el error:
+        --> Invalid options object. Dev Server has been initialized using an options object that does not match the API schema.options.allowedHosts[0] should be a non-empty string. 
+    - y en ocasiones cuando quitaba el proxy y dejaba la fetch path corta (/api/workout) me decia otro error:
+         --> SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON <-- como dando a entender que la data que retornaba era un HTML y no un JSON
+    - para solucionar segui los siguientes pasos encontrados en foros:
+        --> npm i cors <-- para installar el package cors
+        --> en el folder backend/server.js incluir:
+            --> const cors = require("cors")
+            --> app.use(cors(corsOptions)) <-- como el primer middleware justo despues de const app= express()
+        --> en el folder frontend/Home.js incluir:
+            --> fetch('http://localhost:4000/api/workouts') <-- es decir, la PATH completa y eliminar el proxy de package.json 
+    **********************************************************************************************************
+
+45. WORKOUT DETAILS COMPONENT 
+    -Now that we have confirmed the API Works, we can improve upon the way the workouts are fetched and display. We will then change the simple paragraph with workout tile we created, to now display an actual component of workout details. to do this:
+        - 1. Create a component --> workoutDetails.js
+        - 2. Export it and import it on the Home Component.
+        - 3. Include it in the JSX template as a substitute of the current paragraph, so it no longer shows a simple paragraph with the title of the workout but instead it maps and displays each workout and lays it out as an actual component (workoutDetails.js)
+        - 4. Make sure to include a key on this component that is related to the _id of each document
+        - 5. Also make sure to add some props so we can pass the results of the fetched workout documents from Home component to workoutDetails component
+        - 6. lastly fix some CSS so it looks pretty
+    --> Home JSX return
+        --> return ( 
+                <div className="home">
+                    <h2>WELCOME TO THE FRONT END</h2>
+                    <div className="workouts">
+                        { workouts && workouts.map((workout)=> (
+                            <WorkoutDetails key={workout._id} workout={workout}/>
+                        ))}
+                    </div>
+                </div>
+            );
+    --> Workout details
+        --> const WorkoutDetails = ({workout}) => {
+                return ( 
+                    <div className="workout-details">
+                        <h4>{workout.title}</h4>
+                        <p><strong>Load (kg): </strong>{workout.load}</p>
+                        <p><strong>Repetitions: </strong>{workout.reps}</p>
+                    </div>
+                );
+            }
+    
+46. NEW WORKOUT FORM IN THE FRONT END
+    - First we create a new Component (WorkoutForm.js)
+
+                    
+
+
+
+            
+        
