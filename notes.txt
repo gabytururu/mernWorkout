@@ -637,10 +637,162 @@
     
 46. NEW WORKOUT FORM IN THE FRONT END
     - First we create a new Component (WorkoutForm.js)
+    - then, we define what inputs will we want this form to have, and thus CREATE A NEW STATE for each conceptual input we decide to include (regardless of it being via input, select, text area or any other input metatag)
+    - Rememeber the reason for this, which is the fact that in react we tend to handle the values of each input as a state that mutates as you decide to include a new value...ultimately we can then create an object with the final states of each input value to create the FORM Submition. eg:
+        --> const [title, setTitle] = useState('')
+        --> const [load, setLoad] = useState('')
+        --> const [reps, setReps] = useState('')
+    - Now we create a form that includes all the fields (states) that we decided to include <form></form>
+        --> Note--> you may delete the action="" property from the form metatag <form action=""> and only keep it as <form></form> with whatever class style you desire
 
-                    
+47. INPUT FIELDS SETUP IN A FORM
+    - Inside the form we now include a title for the form and then start including the LABELS and INPUTS as desired, making sure it matches the states created.. or if something changes, also changing the list of states (eg. if i add more inputs)
+        --> in the LABEL metatag, i also keepit simple and eliminate properties such as "for" or "htmlFor" --> <label htmlFor=""></label> and keep it simple <label></label> 
+        --> Then on the INPUT metatag, i incorporate all the logic required to link this input to the state hook created. Typically my input labels will have at least the following properties:
+            - 1. type --> so it is a text input, number, etc
+            - 2. onChange --> so I can connect the typing in the inputfield with the statehook and store it as the value of this input, so the onchange triggers a change on State. 
+            - 3. value --> so i decide how the input will start or restart when reseted. but also how when the state changes (due to onChange actions), it then gets passed to this property and so the value of this input is now the typed info on the form.
+            - 4. required --> in case i wanna make it mandatory
+        --> a typical way to lay this out is in vertical form instead of horizontal, so it is easier to read:
+            --> <input 
+                    type="text"
+                    onChange={(e)=> setTitle(e.target.value)}
+                    value={title}
+                    required
+                />
+    - Once I've done that I can simply copy, paste and adjust the LABEL Inner Text, The hooks related to each input both in onChange and in Value, and the  input types, so it corresponds to the type of inputs it will get (eg number, vs type vs others).  See results:
+        --> const WorkoutForm = () => {
+                const [title, setTitle] = useState('')
+                const [load, setLoad] = useState('')
+                const [reps, setReps] = useState('')
+                return ( 
+                <form className="create">
+                    <h3>Add a New Workout</h3>
+                    <label>Excercise title:</label>
+                    <input 
+                        type="text"
+                        onChange={(e)=> setTitle(e.target.value)}
+                        value={title}
+                        required
+                    />
+                    <label>Load on this excercise:</label>
+                    <input 
+                        type="number"
+                        onChange={(e)=> setLoad(e.target.value)}
+                        value={load}
+                        required
+                    />
+                    <label>Number of Reps:</label>
+                    <input 
+                        type="number"
+                        onChange={(e)=> setReps(e.target.value)}
+                        value={reps}
+                        required
+                    />
+                    <button>Add Workout</button>
+                </form> 
+                );
+            }
+    
+48. ONSUBMIT HANDLER OF THE FORM ---> POST REQ -- FETCH PORTION
+    - Now that we have structured our form, we can now incorporate the submitt logic.
+    - first thing is simply to add a button at the end of the form so we can connect this with the submittion. 
+    - then I go into the FORM Metatag and add the onSubmit handler
+        --> <form className="create" onSubmit={handleSubmit}>
+                <labels etc />
+                <inputs etc/>
+                <button>Submit Form</button>
+            </form>
+    - Once this is done we can now create the logic for the onsubmit handler 
+        --> first thing is to remember this must be an ASYNC function bc we will be posting on an API
+        --> then, must always remember to take the EVENT OBJECT as the first parameter (e) and ensure we e.preventDefault
+        --> we then create a DUMMY WORKOUT Object that we test to send as the BODY of the request
+            --> const workout ={ title, load, reps }
+        --> then we setup the FETCH API method to POST The request. You must keep in mind that the POST Needs to be done to the exact same PATH (ENDPOINT) THAT THE SERVER REQUIRES... So there is this distinction between routes in front end and routes in backend. for example:
+            --> in HOME '/' (://localhost3000/) I consume all workouts thru a GET ALL WORKOUTS request. Though the GET ALL workouts request is actually done to an endpoint that has a precedent path of /api/workouts (://localhost:4000/api/workouts) bc that how we set it up in the middleware app.use('/api/workouts',workoutRoutes)
+            --> likewise in WorkoutForm I want to POST a new workout. So I must make sure that regardless it comes from a form located in Home for example, it POSTS things to the right enpoint which has the precedent /api/workouts
+        --> Lastly we pass on the SECOND ARGUMENT to the fetch function, which is always necesary in a POST REQUEST. the POST OBJECT with the properties:
+            --> method: 'POST',
+            --> body: JSON.stringify(workout) <-- so it sends the workout object as the body of the POST object but in raw JSON Format (bc thats how the backend needs it)
+            --> headers: { 'Content-Type': 'application/json'} <-- necessary so the backend can interpret the informaction received. 
+                --> const workout = {title, load, reps}
+                    const response = await fetch('http://localhost:4000/api/workouts', {
+                        method: 'POST',
+                        body: JSON.stringify(workout),
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
 
+49. ONSUBMIT HANDLER OF THE FORM ---> POST REQ -- RESPONSE HANDLING
+    - Once the FETCH/POST method has been completed, we now need to aggregate the response logic... eg. what to do with the response a/o with errors received
+    - So... first thing is we handle the response and turn it to json() format and store it in a variable   
+        --> const json = await response.json()
+    - then we add the conditional logic on what to do in case of success, and in case of error. 
+    - in case of an ERROR we want to make sure the error gets stored somewhere so we DO the following
+        --> create a new state hook --> const [error, setError] = useState(null)
+        --> incorporate this new state into a conditional.. so if the response is NOT OK then we set error to "json.error"... so we are ssentially utilizing the .OK property of the response object (which can be true or false) and the .ERROR property of the response Object which gets PASSED to the Frontend request, by the BACKEND Controllers which establish what to do with errors obtained when trying to alter the MONGO DB. 
+    - In case of SUCCESS We want to make sure to trigger certain action such as --> reSetting the states to its original value (so if i want to add a new value inputs look Blank), and displaying the response (eg. backend response received) somewhere (eg. in my console)
+        -->  setTitle(''), setLoad(''), setReps(''), setError(null)
+        -->  console.log('new workout added', json)
+                --> const json = await response.json()
+                    if (!response.ok){
+                        setError(json.error)
+                    }
+                    if (response.ok){
+                        setTitle('')
+                        setLoad('')
+                        setReps('')
+                        setError(null)
+                        console.log('new workout added', json)
+                    }
+    - Lastly before we test it, i add in the JSX template, the incorporation of a visual error .. just to catch in case there is an error, and to make sure it all works out... remember to add it in a conditional way (&&) bc this is all connected to a fetch and to conditional responses   
+        --> {error && <div className="error">{error}</div>}
+    - we now export default this component and call it from the HOME component to test it prior to styling it and so on -- and VOILAA!! IT WORKS..
+    - We now style it and thats it for now. 
 
+50. ADDING A REACT CONTEXT 
+    - When we submit the new workout, the HOME PAGE doesnt show it instantly, even if it goes on successfully. the reason is that we have prevented the default refresh. it is until we manually refresh that it shows up. 
+    - though the technical reason behind is that there is NOT complete synchronicity between the DB and the displayed list in our home page. To solve this we could either:
+        - 1. re fetch again the whole DB everytime we add a new document(EG. a new GET ALL WORKOUTS ) but that feels a bit excesive. 
+        - 2. update the STATE locally when we successfully add a new document.
+    - we will be doing #2 here, and we will doit with A REACT CONTEXT. which will allow us to get this result without having to use and pass on the WORKOUT STATE through different components
+    - REACT CONTEXT Is a way that we can provide global state to many different components in the application and then we can update that state by dispathing actions in each of these components (he says like redux do)
+    - we are going to do this by working with the workouts data that we will fetch from MONGO DB
+    - Instead of passing the states through props between components and pages to update it we can just access it and update it directly by using a context provider from any component
 
+51. SETTING UP THE CONTEXT/CONTEXT PROVIDER IN OUR APPLICATION
+    - First we create a folder called context and inside a file named WorkoutContext.js
+    - inside WorkoutContext we import a function from react called CreateContext
+        --> import {createContext} from 'react'
+    - then create a new constant called Workouts context and we make it equal to the invoked function createContext() -and theas creates a brand new context
+    - lastly we make sure this constant is exported so we can use later on    
+        --> export const WorkoutsContext = createContext()
+        --> by doing this, we are indeed creating a new Context, which in essence will return us a Context Component that we can use immediatelly after. 
+    - Now, we gotta provide that context to our application component tree , so our components can access it. the way to do this is by making a context provider component, which is essentially like creating a typical react component, but which will wrap the rest of our application eventually.So all we need to do is create a typical component but inside the return in the JSX template we need to call the newly created context (eg. WorkoutsContext) which as said, was just created when we invoked the createContext() function. 
+    - An must make sure then the new context WRAPS the rest of the parts of our application needs access to the context 
+    - in our case actaully we will wrap the WHOLE APPLICATION, Thus the WHOLE COMPONENT TREE so the entire app can access this context. 
+    - though to do this, I cannot simply put the <App/> root component inside my context provider.. bc it will not work, bc of the hierarchies... instead what I gotta do is EXPORT THE BRAND NEW CONTEXT to the INDEX which is where the <App/> root component is rendered, and it is also there where I can go ahead and IMPORT THE CONTEXT And WRAP my Root component (<App/>) With such context.    
+    - so... gotta make sure this function/component is exported and later on imported from the INDEX.JS file
+    - once we import it from the index.js file we can go ahead and wrap the app component around it:
+        --> root.render(
+                <React.StrictMode>
+                    <WorkoutsContextProvider>
+                    <App />
+                    </WorkoutsContextProvider>
+                </React.StrictMode>
+            );
+    - Now in addition, once we ave wrapped the App in the index.js component, we must also go back to the context component and make sure we incorporate the "children" props to it, and call it from the inside the JSX Template. The {children} prop essentially means "any component that has been wrapped by the CONTEXT Provider. In our case for the moment is basically the ROOT component <App/>. So by adding this prop we must make sure this provider receives such root component (app) and then, we must also add it in the JSX WRAPPED INSIDE THE CONTEXT PROVIDER AS WELL. This way we are basically setting up the context provider to receive those components that are wrapped by this context, so that the context executes properly
+        --> export const WorkoutsContextProvider = ({children}) => {
+                return ( 
+                    <WorkoutsContext.Provider>
+                        {children}
+                    </WorkoutsContext.Provider>
+                );
+            }
+    - now, at the moment, the context has indeed been setup properly, but it has no STATE VALUES in it so it is not providing any context truly to the rest of the application. but we will continue now doing that, now that the context setup is properly done. 
+
+52. ADDING A STATE TO OUR CONTEXT PROVIDER (SO IT PROPAGATES IT TO THE OTHER COMPONENTS VIA CONTEXT)
+    
             
         

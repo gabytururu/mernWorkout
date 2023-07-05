@@ -20,7 +20,7 @@ app.use(express.json()) //<-- parses the body of any document posted trhu post r
 // app.get('/', (req, res)=>{
 //     res.json({mssg: 'welcome to the app'})
 // })
-app.use('/api/workouts',WorkoutRoutes)
+app.use('/api/workouts', WorkoutRoutes)
 
 
 //======== Connect to DB =========//
