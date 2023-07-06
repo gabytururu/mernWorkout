@@ -793,6 +793,88 @@
     - now, at the moment, the context has indeed been setup properly, but it has no STATE VALUES in it so it is not providing any context truly to the rest of the application. but we will continue now doing that, now that the context setup is properly done. 
 
 52. ADDING A STATE TO OUR CONTEXT PROVIDER (SO IT PROPAGATES IT TO THE OTHER COMPONENTS VIA CONTEXT)
+    TBFilled
+
+53. HANDLING ERRORS --> IMPROVING ERROR HANDLERS 
+    - So our app already works butwhen i try to submit/post an incomplete excercise i get a systems error .. though the message is not really pertinent to the front end... so.. we need to fix that
+    - For starters I need to go to the BACKEND Again, specifically to the CONTROLLERS Folder, bc there is where I define HOW TO HANDLE THE POST requests (and what to get as a response of that request) I see there that essentially when there is an error i get:
+        --> res.status(400).json({error: error.message})
+        --> and the error.message i get comes directly from the mongoose bcause it verifies that it does NOT adhere to the SCHEMA created 
+    - so, to create a more friendly error message I must instead, try to do a checkout process my self so that if indeed the POST request doesnt include all the required variables, then i return a more HUMAN message... so:
+        --> Inside the createWorkout Controller function I insert the following conditional code that allows me to detect missing fields:
+            --> let emptyFields = []
+                if (!title){
+                    emptyFields.push('title')
+                }           
+                if (!load){
+                    emptyFields.push('load')
+                }           
+                if (!reps){
+                    emptyFields.push('reps')
+                }  
+                if(!emptyFields.length>0){
+                    return res.status(400).json({error: 'Please fill in all the fields', emptyFields})
+                }
+            --> so once this checkup is done I would KNOW if there are any empty fields or not, and in case there were (emptyfields>0) I would be providing the frontend with a new error message that specifies whats missing (and not such a robotic thing as before)
+    -Now that the BACKEND Checkoup is complete, I could easily leave it like that, because INDEED i am already providing a sort of new more human error message. HOWEVER in addition to the error message I just enlarged the response object and also added an emptyFiels property, that, under the previous FRONT END CODE i am now not even utilizing because is nowhere called in the FRONT END.
+    - To fix this, i now go to the FRONT END Folder, and specifically to the WORKOUTFORM which is the folder in the front end that handles and receives the RESPONSES from the BACKEND. And there, indeed if I inspect my code I see that the ONLY PROPERTY I CALL AND UTILIZE FROM THE RESPONSE is the ERROR property.. 
+        -->  if (!response.ok){
+                setError(json.error)
+            }
+    - So, I now proceed to make ammendments and fix that to also include and utilize the EMPTYFIELDS new backend property. 
+    - To do this I can leverage the useState hook again, so that the "emptyFields" state starts empty, but if we receive some empty fields as part of the response, we can change the state and have those empty fields stored and use in  our JSX Template
+        --> const [emptyFields, setEmptyFields] = useState([])
+        --> if (!response.ok){
+                setError(json.error)
+                setEmptyFields(json.emptyFields)
+            }
+        --> and also if the response is OK, i make sure the state of emptyFields REMAINs empty so I dont see those errors in the front end by mistake
+        --> if (response.ok){
+                setTitle('')
+                setLoad('')
+                setReps('')
+                setError(null)
+                setEmptyFields([])
+                console.log('new workout added', json)             
+                dispatch({type: 'CREATE_WORKOUT', payload:json})
+            }
+    - Finally, I now utilize also the stateHook (of empty fields) to style the JSX Template properly, so that the error message shows neater.
+
+54. CONDITIONAL STYLING WITH STATE HOOK TO HIGHLIGHT ERROR / EMPTY FIELDS
+
+
+55. FINAL STYLING TOUCHES
+    - STYLING THE DELETE BUTTON --> WITH GOOGLE MATERIAL ICONS
+        - making the delete button an icon. first going to google fonts/icon (https://fonts.google.com/icons) then searching for the bin identically to when i search for a font
+        - once i have decided on the icon I must go ahead and COPY the link rel and PASTE IT  inside my PUBLIC + INDEX.HTML
+            --><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+        - Then, to be able to use it I must add a class(or in react Case a ClassName) that connects this library to my metatag where i will use it. 
+            --> the Class name must be the librarys name -->  "material-symbols-outlined"
+            --><span className="material-symbols-outlined"></span>
+        - Lastly I insert the CODE WORD that allows my HTML to go and search in the library for the SPECIFIC ICON... in the cas of the TRASHCAN BIN is actually "DELETE" so that is what I put inside my SPAN. 
+            --> <span class="material-symbols-outlined">delete</span>
+    - STYLING THE DATE (CREATED AT) --> WITH DATE FNS LIBRARY
+        - Date FNS is a library we can install in our project via NPM It will give us lots of function to format date and time differently
+            --> npm install date-fns 
+    - Import the function "formatDistanceToNow" from the date-fns library   
+            --> import formatDistanceToNow from 'date-fns/formatDistanceToNow'
+    - Now i consume the function to format the Created At date. To do so:
+        --> i go inside the TEMPLATE JSX in WorkoutDetails.
+        --> I invoke the "formatDistanceToNow()" function
+        --> this function takes 2 arguments: 
+            --> 1. a new date (new Date ()) which shall receive the created At date 
+                --> new Date(workout.createdAt)
+            --> 2. an options object, to add "sufix". Meaning, it will add gramaticall complements to the information. For instance if we add a new workout 2 days ago, without the SUFFIX it would say "2 days" but with the Sufix it will say "2 days ago"
+                --> {addSufix: true}
+    - so ultimately it will look lie this:
+        <p>{formatDistanceToNow(new Date(workout.createdAt), {addSuffix:true})}
+
+       
+            
+
+
+
+
     
             
         
